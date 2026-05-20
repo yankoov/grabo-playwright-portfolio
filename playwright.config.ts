@@ -1,3 +1,5 @@
+declare const process: any;
+
 import { defineConfig, devices } from '@playwright/test';
 
 /**
