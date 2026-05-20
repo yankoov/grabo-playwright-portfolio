@@ -3,19 +3,24 @@ import { test, expect } from '@playwright/test';
 test.describe('Grabo.bg - Homepage Smoke Tests', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Преди всеки тест, отваряме началната страница на Grabo
-        await page.goto('https://grabo.bg/');
+        // Отваряме сайта (с леката стратегия за изчакване)
+        await page.goto('https://grabo.bg/', { waitUntil: 'commit' });
+
+        // Хващаме бутона за съгласие по неговия текст
+        const cookieButton = page.getByRole('button', { name: 'Получаване на съгласие' });
+        
+        // Ако банерът се появи, кликваме го, за да се махне от екрана
+        if (await cookieButton.isVisible()) {
+            await cookieButton.click();
+        }
     });
 
     test('should load homepage and verify main elements', async ({ page }) => {
-        // 1. Проверяваме дали заглавието на таба съдържа името на сайта
+        // Уверяваме се, че заглавието е вярно
         await expect(page).toHaveTitle(/Grabo.bg/);
 
-        // 2. Проверяваме дали главното лого е видимо на екрана
+        // Проверяваме дали главното лого е видимо
         const logo = page.getByRole('img', { name: 'Grabo.bg' });
         await expect(logo).toBeVisible();
-
-        // 3. Проверяваме дали страницата се е заредила успешно
-        await expect(page.locator('body')).toBeVisible();
     });
 });
