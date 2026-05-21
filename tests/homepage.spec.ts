@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Grabo.bg - Homepage Smoke Tests', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Стандартно отваряне на сайта
-        await page.goto('https://grabo.bg/');
+        // Using 'commit' strategy to bypass Cloudflare network blocks in CI environments
+        await page.goto('https://grabo.bg/', { waitUntil: 'commit' });
 
-        // Бързо затваряне на банера, ако се появи локално
+        // Handle the GDPR cookie consent banner if it appears
         const cookieButton = page.getByRole('button', { name: 'Получаване на съгласие' });
         if (await cookieButton.isVisible()) {
             await cookieButton.click();
@@ -14,10 +14,8 @@ test.describe('Grabo.bg - Homepage Smoke Tests', () => {
     });
 
     test('should load homepage and verify main elements', async ({ page }) => {
-        // Проверка на заглавието
         await expect(page).toHaveTitle(/Grabo.bg/);
 
-        // Проверка на логото
         const logo = page.getByRole('img', { name: 'Grabo.bg' });
         await expect(logo).toBeVisible();
     });
