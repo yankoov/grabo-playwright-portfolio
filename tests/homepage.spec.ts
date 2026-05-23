@@ -3,21 +3,29 @@ import { test, expect } from '@playwright/test';
 test.describe('Grabo.bg - Homepage Smoke Tests', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Navigate to the homepage
-        await page.goto('https://grabo.bg/');
+        // Navigate to the homepage and wait for the DOM structure
+        await page.goto('https://grabo.bg/', { waitUntil: 'domcontentloaded' });
 
-        // 1. Handle the GDPR cookie consent banner if it appears (2-second limit to keep tests fast)
-        const cookieButton = page.getByRole('button', { name: 'Получаване на съгласие' })
-            .or(page.getByRole('button', { name: 'Получаване на съгласиве' }));
-        
-        if (await cookieButton.isVisible({ timeout: 2000 })) {
+        // 1. Handle the GDPR cookie consent banner (Force wait via try-catch)
+        try {
+            const cookieButton = page.getByRole('button', { name: 'Получаване на съгласие' })
+                .or(page.getByRole('button', { name: 'Получаване на съгласиве' }));
+            
+            // We strictly wait up to 4 seconds for it to attach and become visible
+            await cookieButton.waitFor({ state: 'visible', timeout: 4000 });
             await cookieButton.click();
+        } catch (e) {
+            console.log('GDPR banner did not appear, moving on.');
         }
 
-        // 2. Handle the Location Pop-up if it is visible
-        const locationCloseBtn = page.locator('text="Не, благодаря"').or(page.locator('.fancybox-close'));
-        if (await locationCloseBtn.isVisible({ timeout: 2000 })) {
+        // 2. Handle the Location Pop-up (Force wait via try-catch)
+        try {
+            const locationCloseBtn = page.locator('text="Не, благодаря"').or(page.locator('.fancybox-close'));
+            
+            await locationCloseBtn.waitFor({ state: 'visible', timeout: 3000 });
             await locationCloseBtn.click();
+        } catch (e) {
+            console.log('Location pop-up did not appear, moving on.');
         }
     });
 
@@ -34,9 +42,9 @@ test.describe('Grabo.bg - Homepage Smoke Tests', () => {
         const searchIcon = page.locator('.nhdr_search_icon, .nhdr_search_btn, [class*="search"] button, button[class*="search"]')
             .or(page.locator('header').getByRole('button').filter({ has: page.locator('[class*="search"], [class*="magnif"]') }));
         
-        if (await searchIcon.isVisible({ timeout: 2000 })) {
-            await searchIcon.click();
-        }
+        // Wait for the icon to be fully ready before clicking
+        await searchIcon.waitFor({ state: 'visible', timeout: 4000 });
+        await searchIcon.click();
 
         // 2. Interact with the revealed search input field
         const searchInput = page.locator('#searchhdr_input');
@@ -44,7 +52,6 @@ test.describe('Grabo.bg - Homepage Smoke Tests', () => {
         await searchInput.fill('СПА');
 
         // 3. Select the target category from the dynamic live search suggestions dropdown
-        // Using the unique class '.searchhdr_relax' to guarantee a single match and prevent debug mode errors
         const spaCategoryLink = page.locator('.searchhdr_relax');
         await expect(spaCategoryLink).toBeVisible();
         await spaCategoryLink.click();
