@@ -8,8 +8,7 @@ test.describe('Grabo.bg - Homepage Smoke Tests', () => {
 
         // 1. Handle the GDPR cookie consent banner (Force wait via try-catch)
         try {
-            const cookieButton = page.getByRole('button', { name: 'Получаване на съгласие' })
-                
+            const cookieButton = page.getByRole('button', { name: 'Получаване на съгласие' })                
             
             // We strictly wait up to 4 seconds for it to attach and become visible
             await cookieButton.waitFor({ state: 'visible', timeout: 4000 });
