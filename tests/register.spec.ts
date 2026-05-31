@@ -26,6 +26,7 @@ test.describe('Grabo.bg - Registration Validation Tests', () => {
         await page.waitForURL('**/user/signup', { timeout: 5000 });
 
         // Assert that the full fallback page form fields become visible after the app forces the navigation split
+        // Вече няма да хвърля Strict Mode Violation грешка тук!
         await expect(registerPage.mainFullName).toBeVisible({ timeout: 5000 });
     });
 });

@@ -21,37 +21,66 @@ export class RegisterPage {
     constructor(page: Page) {
         this.page = page;
 
-        // Triggers the main registration dropdown menu from the header
-        this.registerHeaderButton = page.locator('.navitem[href*="signup"]').or(page.locator('text="Регистрация"')).first();
+        // Използваме вградения getByRole локатор за максимална стабилност при намиране на бутона
+        this.registerHeaderButton = page.getByRole('link', { name: 'Регистрация', exact: true });
 
-        // Group 1: Strict scoping inside form[name="hdrrf"] to prevent hitting hidden layout elements
-        this.headerFullName = page.locator('form[name="hdrrf"] input[name="fullname"]');
-        this.headerEmail = page.locator('form[name="hdrrf"] input[name="email"]');
-        this.headerPassword = page.locator('form[name="hdrrf"] input[name="password"]');
-        this.headerConfirmPassword = page.locator('form[name="hdrrf"] input[name="password2"]');
-        this.headerSubmitButton = page.locator('form[name="hdrrf"] a.accountbtn b');
+        // Дефинираме родителския контейнер на хедър формата
+        const headerForm = page.locator('form[name="hdrrf"]');
+        // Дефинираме и скрития контейнер на падащото меню от лога за грешка, за да го изолираме
+        const dropDownMenu = page.locator('#droplogin_signup');
+        
+        // Group 1: Строго изолирани елементи вътре в хедър формата
+        this.headerFullName = headerForm.locator('input[name="fullname"]');
+        this.headerEmail = headerForm.locator('input[name="email"]');
+        this.headerPassword = headerForm.locator('input[name="password"]');
+        this.headerConfirmPassword = headerForm.locator('input[name="password2"]');
+        this.headerSubmitButton = headerForm.locator('a.accountbtn b');
 
-        // Group 2: Scoping for the standalone page, explicitly excluding the header elements using proper CSS :not()
-        this.mainFullName = page.locator('input[name="fullname"]:not(form[name="hdrrf"] input)');
-        this.mainEmail = page.locator('input[name="email"]:not(form[name="hdrrf"] input):not(#yd_input)');
-        this.mainPassword = page.locator('input[name="password"]:not(form[name="hdrrf"] input)');
-        this.mainConfirmPassword = page.locator('input[name="password2"]:not(form[name="hdrrf"] input)');
-        this.mainSubmitButton = page.locator('a.accountbtn b:not(form[name="hdrrf"] *), input[type="submit"]:not(form[name="hdrrf"] *)').first();
+        // Group 2: Изолирани елементи за голямата самостоятелна страница.
+        // За името използваме силно специфичния user-facing локатор, препоръчан от Playwright грешката ви
+        this.mainFullName = page.getByRole('row', { name: 'Име и фамилия:' }).getByRole('textbox');
+        
+        // За останалите полета прилагаме двойно филтриране (да не са в хедъра и да не са в падащото меню)
+        this.mainEmail = page.locator('input[name="email"]')
+            .filter({ hasNot: headerForm })
+            .filter({ hasNot: dropDownMenu })
+            .filter({ hasNot: page.locator('#yd_input') }); // Предпазва от абонаментни инпути, ако изскочат
+            
+        this.mainPassword = page.locator('input[name="password"]')
+            .filter({ hasNot: headerForm })
+            .filter({ hasNot: dropDownMenu });
+            
+        this.mainConfirmPassword = page.locator('input[name="password2"]')
+            .filter({ hasNot: headerForm })
+            .filter({ hasNot: dropDownMenu });
+            
+        // За бутона на голямата страница взимаме първия съвпадащ извън хедър структурите
+        this.mainSubmitButton = page.locator('a.accountbtn b, input[type="submit"]')
+            .filter({ hasNot: headerForm })
+            .filter({ hasNot: dropDownMenu })
+            .first();
     }
 
     /**
      * Toggles the navigation header link to display the initial dropdown registration form
      */
     async openRegisterForm() {
-        await this.registerHeaderButton.click();
-        await this.headerFullName.waitFor({ state: 'visible', timeout: 3000 });
+        // Уверяваме се, че бутонът е зареден и видим на екрана
+        await this.registerHeaderButton.waitFor({ state: 'visible', timeout: 5000 });
+        
+        // Използваме force: true в случай, че някой полупрозрачен попъп/overlay блокира клика за милисекунди
+        await this.registerHeaderButton.click({ force: true });
+        
+        // Изчакваме формата в хедъра да се отвори успешно
+        await this.headerFullName.waitFor({ state: 'visible', timeout: 5000 });
     }
 
     /**
      * Smart method that automatically detects whether the test is currently interacting 
      * with the header micro-form or the fallback standalone full page form.
      */
-    async fillRegistrationForm(name: string, email: string, pass: string) {
+    async fillRegistrationForm(name: string = '', email: string = '', pass: string = '') {
+        // Динамична проверка дали в момента си взаимодействаме с падащото меню в хедъра
         if (await this.headerFullName.isVisible()) {
             // Dropdown context active
             await this.headerFullName.fill(name);

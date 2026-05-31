@@ -1,27 +1,20 @@
 import { test, expect } from '@playwright/test';
+import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
 
 test.describe('Grabo.bg - Authentication Tests', () => {
+    let homePage: HomePage;
     let loginPage: LoginPage;
 
     test.beforeEach(async ({ page }) => {
-        await page.goto('https://grabo.bg/', { waitUntil: 'domcontentloaded' });
-
-        // Handle optional GDPR compliance pop-up
-        try {
-            const cookieButton = page.getByRole('button', { name: 'Получаване на съгласие' });
-            await cookieButton.waitFor({ state: 'visible', timeout: 3000 });
-            await cookieButton.click();
-        } catch (e) {}
-
-        // Handle optional regional location selection pop-up
-        try {
-            const locationCloseBtn = page.locator('text="Не, благодаря"').or(page.locator('.fancybox-close'));
-            await locationCloseBtn.waitFor({ state: 'visible', timeout: 2000 });
-            await locationCloseBtn.click();
-        } catch (e) {}
-
+        homePage = new HomePage(page);
         loginPage = new LoginPage(page);
+
+        // Standard setup managed via centralized HomePage components (fixes copy-paste and empty catches)
+        await homePage.navigate();
+        await homePage.handleInitialPopups();
+
+        // Trigger the login interface entrypoint
         await loginPage.openLoginForm();
     });
 
@@ -37,8 +30,11 @@ test.describe('Grabo.bg - Authentication Tests', () => {
     });
 
     test('should login successfully with valid credentials (Positive Test)', async ({ page }) => {
-        // Step 1: Input correct user testing credentials
-        await loginPage.login('graboqa@gmail.com', 'Grabo123?');
+        // Step 1: Input correct user testing credentials extracted securely from environment space
+        await loginPage.login(
+            process.env.GRABO_TEST_EMAIL!,
+            process.env.GRABO_TEST_PASSWORD!
+        );
 
         // Step 2: Assert successful login by verifying that the "Signout" / "Изход" action link is attached to the DOM
         const logoutLink = page.locator('a[href*="signout"]').first();

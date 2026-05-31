@@ -17,8 +17,14 @@ jobs:
       run: npm ci
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
+    
     - name: Run Playwright tests
+      # Ето тази секция env добавяме тук:
+      env:
+        GRABO_TEST_EMAIL: ${{ secrets.GRABO_EMAIL }}
+        GRABO_TEST_PASSWORD: ${{ secrets.GRABO_PASSWORD }}
       run: npx playwright test
+
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
