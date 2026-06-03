@@ -1,50 +1,48 @@
 import { Page, Locator } from '@playwright/test';
 
-/**
- * LoginPage class representing the authentication components and actions on Grabo.bg.
- * Implements the Page Object Model (POM) architectural pattern.
- */
 export class LoginPage {
     readonly page: Page;
     readonly loginHeaderButton: Locator;
+    readonly loginForm: Locator;
     readonly emailInput: Locator;
     readonly passwordInput: Locator;
-    readonly loginSubmitButton: Locator;
+    readonly submitButton: Locator;
     readonly errorMessage: Locator;
 
     constructor(page: Page) {
         this.page = page;
         
-        // Main header link that triggers the login dropdown modal
-        this.loginHeaderButton = page.locator('.nhdr_user_nav a[href*="signin"]')
-            .or(page.locator('text="Вход"'))
-            .first();
+        // The main header link that reveals the login form (takes the first match to avoid strict mode issues)
+        this.loginHeaderButton = page.getByRole('link', { name: 'Вход', exact: true }).first();
         
-        // Form input fields located inside the sign-in modal container
-        this.emailInput = page.locator('#droplogin_signin input[name="email"]');
-        this.passwordInput = page.locator('#droplogin_signin input[name="password"]');
+        // The form container itself
+        this.loginForm = page.locator('form[name="hdrlf"]');
         
-        // The green submission button inside the dropdown form
-        this.loginSubmitButton = page.locator('#droplogin_signin a.accountbtn');
+        // Targets the inputs precisely inside the form by their 'name' attribute
+        this.emailInput = this.loginForm.locator('input[name="email"]');
+        this.passwordInput = this.loginForm.locator('input[name="password"]');
         
-        // Fix: Targets the exact standalone text on the redirect page that the debugger pointed out
-        this.errorMessage = page.getByText('Въвели сте грешен e-mail');
+        // The submit button inside the form
+        this.submitButton = this.loginForm.getByRole('link', { name: 'Вход', exact: true });
+        
+        // Direct text locator discovered via Playwright Inspector debugging
+        this.errorMessage = page.getByText('Въвели сте грешен e-mail', { exact: false });
     }
 
-    /**
-     * Clicks the header button to reveal the dynamic login dropdown form
-     */
-    async openLoginForm() {
+    async openLoginModal() {
+        // Wait for the header button and click it to toggle the login form visibility
+        await this.loginHeaderButton.waitFor({ state: 'visible', timeout: 5000 });
         await this.loginHeaderButton.click();
-        await this.emailInput.waitFor({ state: 'visible', timeout: 3000 });
+        
+        // Ensure the form is fully expanded and visible before interacting
+        await this.loginForm.waitFor({ state: 'visible', timeout: 3000 });
     }
 
-    /**
-     * Fills out the authentication credentials and submits the login form
-     */
     async login(email: string, password: string) {
+        // Wait for inputs, fill them and submit the form
+        await this.emailInput.waitFor({ state: 'visible', timeout: 3000 });
         await this.emailInput.fill(email);
         await this.passwordInput.fill(password);
-        await this.loginSubmitButton.click();
+        await this.submitButton.click();
     }
 }
