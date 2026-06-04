@@ -28,11 +28,11 @@ export class CartPage {
     }
 
     /**
-     * Navigates directly to a specific city landing page to bypass slow UI dropdowns.
+     * Navigates directly to a specific city landing page.
+     * Uses 'commit' to prevent timeouts caused by heavy background scripts in CI environments.
      */
     async navigateToCity(city: string) {
-        // Using absolute URL to prevent base URL misconfigurations in Playwright
-        await this.page.goto(`https://grabo.bg/${city}`);
+        await this.page.goto(`https://grabo.bg/${city}`, { waitUntil: 'commit' });
     }
 
     /**
