@@ -45,8 +45,21 @@ export default defineConfig({
     {
       name: 'chromium',
       use: {
-        trace: 'on-first-retry',
-        /* Force standard large desktop viewport to prevent responsive design interference */
+        ...devices['Desktop Chrome'], // Използва официалните настройки за Desktop Chrome
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+    {
+      name: 'webkit',
+      use: {
+        ...devices['Desktop Safari'],
         viewport: { width: 1920, height: 1080 },
       },
     },
