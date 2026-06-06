@@ -21,30 +21,30 @@ export class RegisterPage {
     constructor(page: Page) {
         this.page = page;
 
-        // Използваме вградения getByRole локатор за максимална стабилност при намиране на бутона
+        // Use the built-in getByRole locator for maximum stability when identifying the navigation link
         this.registerHeaderButton = page.getByRole('link', { name: 'Регистрация', exact: true });
 
-        // Дефинираме родителския контейнер на хедър формата
+        // Define the parent container of the header dropdown form
         const headerForm = page.locator('form[name="hdrrf"]');
-        // Дефинираме и скрития контейнер на падащото меню от лога за грешка, за да го изолираме
+        // Define the hidden dropdown container to isolate it from fallback page searches
         const dropDownMenu = page.locator('#droplogin_signup');
         
-        // Group 1: Строго изолирани елементи вътре в хедър формата
+        // Group 1: Strictly isolated elements inside the header dropdown micro-form
         this.headerFullName = headerForm.locator('input[name="fullname"]');
         this.headerEmail = headerForm.locator('input[name="email"]');
         this.headerPassword = headerForm.locator('input[name="password"]');
         this.headerConfirmPassword = headerForm.locator('input[name="password2"]');
         this.headerSubmitButton = headerForm.locator('a.accountbtn b');
 
-        // Group 2: Изолирани елементи за голямата самостоятелна страница.
-        // За името използваме силно специфичния user-facing локатор, препоръчан от Playwright грешката ви
+        // Group 2: Isolated elements for the standalone full registration page
+        // Use a user-facing semantic role locator for the name input to maximize test robustness
         this.mainFullName = page.getByRole('row', { name: 'Име и фамилия:' }).getByRole('textbox');
         
-        // За останалите полета прилагаме двойно филтриране (да не са в хедъра и да не са в падащото меню)
+        // Filter input elements to exclude header form, dropdown menu, and newsletter popups
         this.mainEmail = page.locator('input[name="email"]')
             .filter({ hasNot: headerForm })
             .filter({ hasNot: dropDownMenu })
-            .filter({ hasNot: page.locator('#yd_input') }); // Предпазва от абонаментни инпути, ако изскочат
+            .filter({ hasNot: page.locator('#yd_input') }); // Prevents subscription inputs intercepting the test
             
         this.mainPassword = page.locator('input[name="password"]')
             .filter({ hasNot: headerForm })
@@ -54,7 +54,7 @@ export class RegisterPage {
             .filter({ hasNot: headerForm })
             .filter({ hasNot: dropDownMenu });
             
-        // За бутона на голямата страница взимаме първия съвпадащ извън хедър структурите
+        // Select the primary action button on the standalone page, prioritizing visible buttons
         this.mainSubmitButton = page.locator('a.accountbtn b, input[type="submit"]')
             .filter({ hasNot: headerForm })
             .filter({ hasNot: dropDownMenu })
@@ -65,13 +65,13 @@ export class RegisterPage {
      * Toggles the navigation header link to display the initial dropdown registration form
      */
     async openRegisterForm() {
-        // Уверяваме се, че бутонът е зареден и видим на екрана
+        // Ensure the registration button is attached and visible in the viewport
         await this.registerHeaderButton.waitFor({ state: 'visible', timeout: 5000 });
         
-        // Използваме force: true в случай, че някой полупрозрачен попъп/overlay блокира клика за милисекунди
+        // Apply force click to prevent potential transparent modal overlays from blocking the action
         await this.registerHeaderButton.click({ force: true });
         
-        // Изчакваме формата в хедъра да се отвори успешно
+        // Wait for the dropdown macro-form transition to complete and display fields
         await this.headerFullName.waitFor({ state: 'visible', timeout: 5000 });
     }
 
@@ -80,7 +80,7 @@ export class RegisterPage {
      * with the header micro-form or the fallback standalone full page form.
      */
     async fillRegistrationForm(name: string = '', email: string = '', pass: string = '') {
-        // Динамична проверка дали в момента си взаимодействаме с падащото меню в хедъра
+        // Dynamically check if the header dropdown context is active
         if (await this.headerFullName.isVisible()) {
             // Dropdown context active
             await this.headerFullName.fill(name);
