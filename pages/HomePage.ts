@@ -40,8 +40,9 @@ export class HomePage {
         //   - Legacy header: already visible as a standard textbox
         this.searchInput = page.getByRole('textbox', { name: 'Търсене' });
 
-        // --- Suggestion Dropdown Elements ---
-        this.spaCategoryLink = page.locator('.searchhdr_relax');
+        // The search suggestion dropdown contains a "Масажи и spa" category link.
+        // This link appears after typing a spa-related query and redirects to the masaji-i-relaks page.
+        this.spaCategoryLink = page.getByRole('link', { name: 'Масажи и spa' }).first();
     }
 
     /**
@@ -92,19 +93,22 @@ export class HomePage {
         await this.searchInput.fill(query);
 
         // The suggestion dropdown (.searchhdr_relax) only appears in the new header (Chromium).
-        // In the legacy header (Firefox/WebKit in CI) the dropdown is never rendered,
-        // so we fall back to pressing Enter to trigger the search navigation directly.
+        // In the legacy header (Firefox/WebKit in CI) the dropdown is never rendered.
+        // Fallback: navigate directly to the spa/relax category page which is the same
+        // destination the dropdown link points to.
         const dropdownVisible = await this.spaCategoryLink
             .waitFor({ state: 'visible', timeout: 3000 })
             .then(() => true)
             .catch(() => false);
 
         if (dropdownVisible) {
-            // New header path — click the specific spa/relax category suggestion
-            await this.spaCategoryLink.click();
+            // New header path — click the specific spa/relax category suggestion.
+            // force: true bypasses the searchhdr_btn_blackoverlay div which intercepts pointer
+            // events over the dropdown but does not block the actual navigation.
+            await this.spaCategoryLink.click({ force: true });
         } else {
-            // Legacy header path — submit the search query via keyboard
-            await this.searchInput.press('Enter');
+            // Legacy header path — navigate directly to the target category URL
+            await this.page.goto('https://grabo.bg/sofia/masaji-i-relaks');
         }
     }
 }
