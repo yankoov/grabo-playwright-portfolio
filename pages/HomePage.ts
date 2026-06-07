@@ -91,8 +91,20 @@ export class HomePage {
         await this.searchInput.waitFor({ state: 'visible', timeout: 5000 });
         await this.searchInput.fill(query);
 
-        // Wait for and click the suggestion category link that appears in the dropdown
-        await this.spaCategoryLink.waitFor({ state: 'visible', timeout: 3000 });
-        await this.spaCategoryLink.click();
+        // The suggestion dropdown (.searchhdr_relax) only appears in the new header (Chromium).
+        // In the legacy header (Firefox/WebKit in CI) the dropdown is never rendered,
+        // so we fall back to pressing Enter to trigger the search navigation directly.
+        const dropdownVisible = await this.spaCategoryLink
+            .waitFor({ state: 'visible', timeout: 3000 })
+            .then(() => true)
+            .catch(() => false);
+
+        if (dropdownVisible) {
+            // New header path — click the specific spa/relax category suggestion
+            await this.spaCategoryLink.click();
+        } else {
+            // Legacy header path — submit the search query via keyboard
+            await this.searchInput.press('Enter');
+        }
     }
 }
