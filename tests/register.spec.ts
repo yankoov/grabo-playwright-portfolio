@@ -9,24 +9,14 @@ test.describe('Grabo.bg - Registration Validation Tests', () => {
     test.beforeEach(async ({ page }) => {
         homePage = new HomePage(page);
         registerPage = new RegisterPage(page);
-
-        // Standard setup: Navigate to target domain and clean generic modal cookie/location blockades
         await homePage.navigate();
         await homePage.handleInitialPopups();
-
-        // Focus and load the registration entry workflow
         await registerPage.openRegisterForm();
     });
 
     test('should redirect and show errors when trying to register with empty fields', async ({ page }) => {
-        // Execute dynamic action method by sending empty strings into the field logic
         await registerPage.fillRegistrationForm('', '', '');
-
-        // Enforce synchronization by ensuring Playwright catches the hard backend validation redirect
         await page.waitForURL('**/user/signup', { timeout: 5000 });
-
-        // Assert that the full fallback page form fields become visible after the app forces the navigation split
-        // This will no longer throw a Strict Mode Violation error due to the improved element isolation in the Page Object!
         await expect(registerPage.mainFullName).toBeVisible({ timeout: 5000 });
     });
 });

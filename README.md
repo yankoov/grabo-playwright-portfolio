@@ -6,31 +6,67 @@ This is an End-to-End (E2E) automated testing portfolio designed and developed u
 
 ## 🚀 Key Features & Engineering Decisions
 
-* **Page Object Model (POM) Architecture:** Strict separation of concerns. Page definitions (locators and action workflows) are entirely decoupled from the test scenarios to maximize maintainability and scalability.
-* **Smart Contextual Form Handling:** Developed dynamic runtime logic inside the `RegisterPage` layer. The framework automatically detects the active UI state—sensing whether to interact with the compact header dropdown micro-form (`form[name="hdrrf"]`) or to adapt seamlessly to the standalone full-page signup view after a backend redirection layout split.
-* **Resilience Against Strict Mode Violations:** To completely bypass DOM node duplication conflicts (e.g., matching hidden mobile layouts or layered dropdown containers like `#droplogin_signup`), the repository utilizes precise filtering via Playwright's `.filter({ hasNot: ... })` engine combined with clean user-facing `getByRole` semantics.
-* **Secure Environment Configuration:** Sensitive authentication keys, registration footprints, and test emails are isolated from the codebase. They are injected at runtime using encrypted local footprints via `dotenv`.
+- **Page Object Model (POM) Architecture:** Strict separation of concerns. Page definitions (locators and action workflows) are entirely decoupled from the test scenarios to maximize maintainability and scalability.
+
+- **Cross-Browser Header Compatibility:** Grabo.bg serves two different header layouts depending on the browser's User-Agent. The new header (Chromium) uses inline dropdown forms, while the legacy header (Firefox/WebKit in CI) navigates to standalone pages. All page objects detect the active context at runtime via `Promise.race()` and handle both layouts transparently.
+
+- **Smart Contextual Form Handling:** Dynamic runtime logic inside `RegisterPage` and `LoginPage` automatically detects whether to interact with the compact header dropdown micro-form or adapt to the standalone full-page view after a backend redirection.
+
+- **Resilience Against Strict Mode Violations:** To bypass DOM node duplication conflicts (e.g., layered dropdown containers like `#droplogin_signup` and `#droplogin_signin` coexisting in the DOM), the project uses Playwright's `.filter({ hasNot: ... })` engine combined with `getByRole` semantics for precise element isolation.
+
+- **Secure Environment Configuration:** Sensitive credentials and test emails are isolated from the codebase and injected at runtime via `dotenv`.
+
+- **CI/CD Integration:** GitHub Actions workflow runs the full test suite across Chromium, Firefox, and WebKit on every push, with automatic retry on failure and HTML report artifacts.
 
 ---
 
 ## 🛠️ Technology Stack
 
-* **Test Framework:** [Playwright](https://playwright.dev/)
-* **Language:** TypeScript (Node.js runtime environment)
-* **Configuration Management:** Dotenv
+- **Test Framework:** [Playwright](https://playwright.dev/)
+- **Language:** TypeScript
+- **CI/CD:** GitHub Actions
+- **Configuration Management:** dotenv
 
 ---
 
 ## 📂 Repository Structure
 
-```text
+```
 ├── pages/
-│   ├── HomePage.ts       # Navigation base, cookie acceptance, and location modals
-│   ├── LoginPage.ts      # Authentication locators and action flows
-│   └── RegisterPage.ts   # Dynamic register logic (Header Micro-form vs. Standalone view)
+│   ├── HomePage.ts       # Navigation, popup handling, search
+│   ├── LoginPage.ts      # Authentication locators and flows
+│   ├── RegisterPage.ts   # Registration logic (dropdown vs. standalone page)
+│   └── CartPage.ts       # Cart and checkout flows
 ├── tests/
-│   ├── login.spec.ts     # Login workflow validation tests
-│   └── register.spec.ts  # Registration workflows and empty input boundary testing
-├── .env.example          # Safe configuration template for environment variables
-├── playwright.config.ts  # Global execution configurations (parallelism, retries, reporting)
-└── README.md             # Project documentation
+│   ├── homepage.spec.ts  # Smoke tests — title, logo, search
+│   ├── login.spec.ts     # Login validation (negative test)
+│   ├── register.spec.ts  # Registration boundary testing (empty fields)
+│   └── cart.spec.ts      # Add to cart E2E flow
+├── .env.example          # Environment variable template
+├── playwright.config.ts  # Timeouts, retries, browser projects
+└── README.md
+```
+
+---
+
+## ⚙️ Setup
+
+```bash
+npm install
+npx playwright install
+```
+
+Copy `.env.example` to `.env` and fill in your test credentials.
+
+## ▶️ Running Tests
+
+```bash
+# All browsers
+npx playwright test
+
+# Single browser
+npx playwright test --project=chromium
+
+# View HTML report
+npx playwright show-report
+```
